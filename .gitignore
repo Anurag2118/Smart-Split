@@ -1,0 +1,18 @@
+# Root dependencies (agar hain)
+node_modules/
+
+# Client & Server specific ignore
+client/node_modules/
+server/node_modules/
+
+# Environment secrets
+.env
+client/.env
+server/.env
+
+# Build files
+client/build/
+client/dist/
+
+# Logs
+npm-debug.log
