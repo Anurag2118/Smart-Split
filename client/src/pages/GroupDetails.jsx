@@ -155,7 +155,9 @@ const GroupDetails = () => {
             setNewMemberUsername(''); 
             setIsAddingMember(false); 
             fetchData(); 
-        } catch (err) { alert("Only group admin can add members"); }
+        } catch (err) { 
+            alert(err.response?.data?.message || "Failed to add member"); 
+        }
     };
 
     // Includes removal animation before deletion API call
