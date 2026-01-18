@@ -1,10 +1,9 @@
 import axios from 'axios';
 
 const API = axios.create({
-    baseURL: 'http://localhost:5000/api', // Backend URL
-    headers: {
-        'Content-Type': 'application/json'
-    }
+    baseURL: isDev 
+        ? 'http://localhost:5000/api'                    // if on local development
+        : 'https://fairshare-backend.onrender.com/api',  // if Live
 });
 
 // Add a request interceptor to include the token in headers
