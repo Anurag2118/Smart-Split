@@ -1,5 +1,7 @@
 import axios from 'axios';
 
+const isDev = import.meta.env.MODE === 'development';
+
 const API = axios.create({
     baseURL: isDev 
         ? 'http://localhost:5000/api'                    // if on local development
