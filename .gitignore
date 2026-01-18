@@ -1,4 +1,4 @@
-# Root dependencies (agar hain)
+# Root dependencies
 node_modules/
 
 # Client & Server specific ignore

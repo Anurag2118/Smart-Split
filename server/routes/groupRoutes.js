@@ -82,20 +82,36 @@ router.put('/leaveGroup', auth, async (req, res) => {
     try {
         const { groupId } = req.body;
 
-        // 1. Find the group
+        // Find the group
         const group = await Group.findById(groupId);
         if (!group) return res.status(404).json({ message: "Group not found" });
 
-        // 2. Filter out the leaving user from the members list
+        // Filter out the leaving user from the members list
         const remainingMembers = group.members.filter(
             member => member.toString() !== req.user.id
         );
+ 
+        // CHECK: If no members remain after this user leaves
+        if (remainingMembers.length === 0) {
+            // A. Delete all expenses associated with this group
+            await Expense.deleteMany({ group: groupId });
+            
+            // B. Delete the group itself
+            await Group.findByIdAndDelete(groupId);
+
+            // C. Remove group from User's list
+            await User.findByIdAndUpdate(req.user.id, {
+                $pull: { groups: groupId }
+            });
+
+            return res.json({ message: "Group deleted as you were the last member." });
+        }
 
         // 3. ADMIN TRANSFER LOGIC
         // Check if the person leaving is the current Creator
         if (group.creator.toString() === req.user.id) {
             if (remainingMembers.length > 0) {
-                // Transfer ownership to the next member in the list (usually the oldest member)
+                // Transfer ownership to the next member in the list (the oldest member)
                 group.creator = remainingMembers[0]; 
             }
             // If no members are left, the group remains creator-less (or you could delete it)
@@ -114,6 +130,50 @@ router.put('/leaveGroup', auth, async (req, res) => {
 
     } catch (err) {
         console.error("Leave group error:", err.message);
+        res.status(500).send("Server Error");
+    }
+});
+
+router.put('/removeMember', auth, async (req, res) => {
+    try {
+        const { groupId, memberId } = req.body;
+
+        // 1. Retrieve the group context
+        const group = await Group.findById(groupId);
+        if (!group) return res.status(404).json({ message: "Group not found" });
+
+        // 2. Authorization Check: Strict Admin Verification
+        // Only the group creator can remove other members
+        if (group.creator.toString() !== req.user.id) {
+            return res.status(403).json({ message: "Permission Denied: Only the group admin can remove members." });
+        }
+
+        // 3. Validation: Admin cannot remove themselves via this route
+        // Admins should use 'Leave Group' or 'Delete Group' instead
+        if (memberId === req.user.id) {
+            return res.status(400).json({ message: "Admin cannot be removed. Please use 'Leave Group' or 'Delete Group'." });
+        }
+
+        // 4. Verify membership existence
+        if (!group.members.includes(memberId)) {
+            return res.status(404).json({ message: "User is not a member of this group." });
+        }
+
+        // 5. Execution: Filter out the member from the group array
+        group.members = group.members.filter(
+            member => member.toString() !== memberId
+        );
+        await group.save();
+
+        // 6. Synchronization: Remove group reference from the removed user's profile
+        await User.findByIdAndUpdate(memberId, {
+            $pull: { groups: groupId }
+        });
+
+        res.json({ message: "Member removed successfully", group });
+
+    } catch (err) {
+        console.error("Remove Member Error:", err.message);
         res.status(500).send("Server Error");
     }
 });
