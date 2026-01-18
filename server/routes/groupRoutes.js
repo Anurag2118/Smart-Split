@@ -48,7 +48,7 @@ router.put('/addMember', auth, async (req, res) => {
 
         // 2. Check if requester is Admin (Creator)
         if (group.creator.toString() !== req.user.id) {
-            return res.status(401).json({ message: "Not authorized" });
+            return res.status(401).json({ message: "Only admin can add members" });
         }
 
         // 3. Find User to Add
